@@ -1,0 +1,50 @@
+---
+# tasks file for codeready workspaces
+- name: Copying of template files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: '0644'
+  with_items:
+          #- src: /home/gulamjeelani/openshift4/utils/deploy_devspace/roles/devspace_workspaces/templates/operatorgroup.j2
+          #dest: "{{ resource_creation_file_path }}operatorgroup.yml"
+    - src: "{{ jinja2_template_file_path }}codeready-subs.j2"
+      dest: "{{ resource_creation_file_path }}codeready-subs.yml"
+    - src: "{{ jinja2_template_file_path }}che-cluster.j2"
+      dest: "{{ resource_creation_file_path }}che-cluster.yml"
+
+
+
+- name: Login to OCP cluster
+  command: oc login --token="{{ token }}" --server="{{ ocp_server_url }}"
+
+  #- name: Creation of namespace
+  #  command: oc create namespace "{{ namespace }}"
+
+
+  #- name: Creation of OperatorGroup
+  #  command: sudo oc create -f {{ resource_creation_file_path }}operatorgroup.yml -n "{{ namespace }}"
+  #  register: operatorGroup
+
+
+- name: Creation of Codeready Subscription
+  command: sudo oc create -f {{ resource_creation_file_path }}codeready-subs.yml -n "{{ namespace }}"
+  register: codeready_subs
+
+- debug:
+    msg: "{{codeready_subs.stdout}}"
+
+- name: wait for 300 sec
+  wait_for:
+    timeout: "{{delay}}"
+
+- name: Creation of Che cluster
+  command: sudo oc create -f {{ resource_creation_file_path }}che-cluster.yml -n "{{ namespace }}"
+  register: che_cluster
+
+- debug:
+    msg: "{{che_cluster.stdout}}"
+
+- name: deletion of files
+  command: rm -rf "{{ resource_creation_file_path }}operatorgroup.yml" "{{ resource_creation_file_path }}codeready-subs.yml" "{{ resource_creation_file_path }}che-cluster.yml"
+
